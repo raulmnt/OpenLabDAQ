@@ -14,14 +14,14 @@ Responsibilities
 - Connect to all sensors.
 - Acquire one record every acquisition period.
 - Send every acquisition record to History.
+- Send every acquisition record to Logger.
 - Display the acquisition record.
 - Disconnect all sensors before exiting.
 
 Future versions will add:
 
-- Logger integration.
 - GUI integration.
-- User commands.
+- User-controlled logging.
 """
 
 from datetime import datetime
@@ -40,20 +40,6 @@ from logger import Logger
 def load_sensor_class(sensor_name):
     """
     Load the sensor class that matches the sensor name.
-
-    Example
-    -------
-    Sensor name:
-
-        FurnaceTC
-
-    Expected file:
-
-        sensors/FurnaceTC.py
-
-    Expected class:
-
-        class FurnaceTC
     """
 
     module = import_module(f"sensors.{sensor_name}")
@@ -156,6 +142,10 @@ def main():
 
     print("\nStarting acquisition...\n")
 
+    logging = True
+
+    first_record = True
+
     try:
 
         while True:
@@ -183,6 +173,20 @@ def main():
             history.add(record)
 
             # ------------------------------------------------------
+            # Send record to Logger.
+            # ------------------------------------------------------
+
+            if logging:
+
+                if first_record:
+
+                    logger.new_file(record)
+
+                    first_record = False
+
+                logger.write(record)
+
+            # ------------------------------------------------------
             # Display acquisition record.
             # ------------------------------------------------------
 
@@ -195,6 +199,8 @@ def main():
         print("\nAcquisition stopped by user.")
 
     finally:
+
+        logger.close()
 
         disconnect_sensors(sensors)
 
