@@ -29,7 +29,7 @@ class FurnaceTC:
     """
 
     NAME = "FurnaceTC"
-    UNIT = "°C"
+    UNIT = "C"
     BAUDRATE = 9600
 
     def __init__(self, port):

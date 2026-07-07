@@ -1,48 +1,75 @@
 """
 main.py
 
-Test version of the Tube Furnace DAQ backbone.
+Tube Furnace DAQ Backbone
 
-This file:
-- Reads config.json
-- Loads enabled sensors
-- Connects to them
-- Reads values every acquisition period
-- Builds one acquisition record
-- Prints it
-- Disconnects cleanly
+Purpose
+-------
+Coordinates the complete data acquisition process.
+
+Responsibilities
+----------------
+- Load the system configuration.
+- Create the enabled sensor drivers.
+- Connect to all sensors.
+- Acquire one record every acquisition period.
+- Send every acquisition record to History.
+- Display the acquisition record.
+- Disconnect all sensors before exiting.
+
+Future versions will add:
+
+- Logger integration.
+- GUI integration.
+- User commands.
 """
 
-import time
 from datetime import datetime
 from importlib import import_module
+import time
 
 from config import load_config
+from history import History
+from logger import Logger
 
+
+# ---------------------------------------------------------------------
+# Load one sensor class.
+# ---------------------------------------------------------------------
 
 def load_sensor_class(sensor_name):
     """
-    Load a sensor class using the project naming convention.
+    Load the sensor class that matches the sensor name.
 
-    Example:
-    sensor_name = "FurnaceTC"
+    Example
+    -------
+    Sensor name:
 
-    Expected:
-    sensors/FurnaceTC.py
-    class FurnaceTC
+        FurnaceTC
+
+    Expected file:
+
+        sensors/FurnaceTC.py
+
+    Expected class:
+
+        class FurnaceTC
     """
 
     module = import_module(f"sensors.{sensor_name}")
-    sensor_class = getattr(module, sensor_name)
 
-    return sensor_class
+    return getattr(module, sensor_name)
 
+
+# ---------------------------------------------------------------------
+# Create all enabled sensors.
+# ---------------------------------------------------------------------
 
 def create_enabled_sensors(config):
     """
-    Create sensor objects for every sensor with a COM port assigned.
+    Create one sensor object for every enabled sensor.
 
-    Sensors with port = null are skipped.
+    Sensors with port = null are ignored.
     """
 
     sensors = []
@@ -53,6 +80,7 @@ def create_enabled_sensors(config):
             continue
 
         sensor_class = load_sensor_class(sensor_name)
+
         sensor = sensor_class(port)
 
         sensors.append(sensor)
@@ -60,49 +88,121 @@ def create_enabled_sensors(config):
     return sensors
 
 
+# ---------------------------------------------------------------------
+# Connect all sensors.
+# ---------------------------------------------------------------------
+
+def connect_sensors(sensors):
+    """
+    Connect every enabled sensor.
+    """
+
+    print("\nConnecting sensors...")
+
+    for sensor in sensors:
+
+        sensor.connect()
+
+        print(f"Connected: {sensor.NAME}")
+
+
+# ---------------------------------------------------------------------
+# Disconnect all sensors.
+# ---------------------------------------------------------------------
+
+def disconnect_sensors(sensors):
+    """
+    Disconnect every enabled sensor.
+    """
+
+    print("\nDisconnecting sensors...")
+
+    for sensor in sensors:
+
+        sensor.disconnect()
+
+        print(f"Disconnected: {sensor.NAME}")
+
+
+# ---------------------------------------------------------------------
+# Main program.
+# ---------------------------------------------------------------------
+
 def main():
-    """
-    Run the DAQ test loop.
-    """
+
+    # --------------------------------------------------------------
+    # Load configuration.
+    # --------------------------------------------------------------
 
     config = load_config()
 
-    period_ms = config["acquisition"]["period_ms"]
-    period_seconds = period_ms / 1000
+    period = config["acquisition"]["period_ms"] / 1000
+
+    # --------------------------------------------------------------
+    # Create DAQ modules.
+    # --------------------------------------------------------------
+
+    history = History()
+
+    logger = Logger(config["logging"]["default_directory"])
 
     sensors = create_enabled_sensors(config)
 
-    print("Connecting sensors...")
+    # --------------------------------------------------------------
+    # Connect sensors.
+    # --------------------------------------------------------------
 
-    for sensor in sensors:
-        sensor.connect()
-        print(f"Connected: {sensor.NAME}")
+    connect_sensors(sensors)
 
     print("\nStarting acquisition...\n")
 
     try:
-        for _ in range(10):   # test: read 10 times
 
-            record = {}
+        while True:
+
+            # ------------------------------------------------------
+            # Create one acquisition record.
+            # ------------------------------------------------------
 
             timestamp = datetime.now()
-            record["Timestamp"] = timestamp
+
+            record = {
+                "Timestamp": timestamp
+            }
 
             for sensor in sensors:
-                column_name = f"{sensor.NAME} ({sensor.UNIT})"
-                record[column_name] = sensor.read()
+
+                column = f"{sensor.NAME} ({sensor.UNIT})"
+
+                record[column] = sensor.read()
+
+            # ------------------------------------------------------
+            # Send record to History.
+            # ------------------------------------------------------
+
+            history.add(record)
+
+            # ------------------------------------------------------
+            # Display acquisition record.
+            # ------------------------------------------------------
 
             print(record)
 
-            time.sleep(period_seconds)
+            time.sleep(period)
+
+    except KeyboardInterrupt:
+
+        print("\nAcquisition stopped by user.")
 
     finally:
-        print("\nDisconnecting sensors...")
 
-        for sensor in sensors:
-            sensor.disconnect()
-            print(f"Disconnected: {sensor.NAME}")
+        disconnect_sensors(sensors)
 
+
+# ---------------------------------------------------------------------
+# Program entry point.
+# ---------------------------------------------------------------------
 
 if __name__ == "__main__":
+
     main()
