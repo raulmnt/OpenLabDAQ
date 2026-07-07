@@ -1,17 +1,20 @@
 {
     "ports": {
         "FurnaceTC": "COM8",
-        "Hornet": "COM3",
-        "BusyBee": "COM6",
-        "FlowController": "COM4"
+        "Hornet": null,
+        "BusyBee": null,
+        "FlowController": null
+    },
+
+    "acquisition": {
+        "period_ms": 1000
     },
 
     "logging": {
-        "default_directory": "Data",
-        "default_interval_ms": 1000
+        "default_directory": "Data"
     },
 
     "history": {
-        "duration_hours": 24
+        "retention_hours": 24
     }
 }
