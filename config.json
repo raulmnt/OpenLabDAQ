@@ -1,8 +1,7 @@
 {
     "ports": {
-        "FurnaceTC": "COM8",
+        "FurnaceTC": "COM7",
         "Hornet": null,
-        "BusyBee": null,
         "FlowController": null
     },
 

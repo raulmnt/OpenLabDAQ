@@ -40,7 +40,7 @@ import sys
 from sensors.FurnaceTC import FurnaceTC
 
 SENSOR = FurnaceTC
-PORT = "COM8"
+PORT = "COM7"
 
 # ---------------------------------------------------------------------
 # Standard DAQ communication test.
