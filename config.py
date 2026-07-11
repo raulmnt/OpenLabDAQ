@@ -1,32 +1,57 @@
 """
 config.py
 
-Loads the user configuration from config.json.
+Loads and saves the OpenLabDAQ configuration.
 
-This module provides a single function for reading the configuration
-file so that the rest of the DAQ software can access user-defined
-settings such as COM ports, logging options, and history settings.
+The configuration file is the single source of truth for:
+- Enabled sensors
+- Sensor COM ports
+- Acquisition period
+- Logging directory
+- History retention
 
-The configuration file is intended to contain all settings that a user
-may wish to modify without editing the Python source code.
+The configuration path is based on this file's location, so the
+program works correctly regardless of the current working directory.
 """
 
-# Import the JSON library to read the configuration file.
 import json
+from pathlib import Path
+
+
+# config.json is stored in the project root beside config.py.
+CONFIG_FILE = Path(__file__).resolve().parent / "config.json"
 
 
 def load_config():
     """
-    Load the DAQ configuration file.
+    Load and return the OpenLabDAQ configuration.
 
     Returns
     -------
     dict
-        Dictionary containing all configuration settings.
+        Complete configuration dictionary.
     """
 
-    # Open the configuration file.
-    with open("config.json", "r") as file:
-
-        # Read and return the JSON data.
+    with open(CONFIG_FILE, "r", encoding="utf-8") as file:
         return json.load(file)
+
+
+def save_config(config):
+    """
+    Save the complete OpenLabDAQ configuration.
+
+    Parameters
+    ----------
+    config : dict
+        Complete configuration dictionary.
+    """
+
+    with open(CONFIG_FILE, "w", encoding="utf-8") as file:
+        json.dump(
+            config,
+            file,
+            indent=4,
+        )
+
+        # Add a final newline to keep the JSON file readable.
+        file.write("\n")

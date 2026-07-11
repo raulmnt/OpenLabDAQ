@@ -1,40 +1,23 @@
 """
-FurnaceTC.py
-
-Driver for the Arduino-based furnace thermocouple.
-
-Purpose
--------
-The FurnaceTC driver translates the Arduino serial communication
-protocol into the standard interface used by the Tube Furnace DAQ.
-
-Responsibilities
-----------------
-- Connect to the configured serial port.
-- Verify the connected instrument.
-- Read the current temperature.
-- Disconnect from the instrument.
-
-The driver does not perform logging, plotting, timestamp generation,
-or experiment control.
+this is just a copy of furnaceTC code to be used with an arduino as a test
 """
 
 import serial
 import time
 
 
-class FurnaceTC:
+class LightSensor:
     """
-    Driver for the Arduino-based furnace thermocouple.
+    Driver for the Arduino-based light sensor.
     """
 
-    NAME = "FurnaceTC"
-    UNIT = "C"
+    NAME = "LightSensor"
+    UNIT = "lux"
     BAUDRATE = 9600
 
     def __init__(self, port):
         """
-        Create a FurnaceTC object.
+        Create a LightSensor object.
 
         Parameters
         ----------
@@ -52,7 +35,7 @@ class FurnaceTC:
         Raises
         ------
         RuntimeError
-            If the connected device is not a FurnaceTC.
+            If the connected device is not a LightSensor.
         """
 
         self.serial = serial.Serial(
@@ -87,12 +70,12 @@ class FurnaceTC:
 
     def read(self):
         """
-        Read the current furnace temperature.
+        Read the current light intensity.
 
         Returns
         -------
         float
-            Current furnace temperature in degrees Celsius.
+            Current light intensity in lux.
 
         Raises
         ------
@@ -128,6 +111,7 @@ class FurnaceTC:
             raise RuntimeError(
                 f"{self.NAME} returned an invalid value: {response!r}"
             ) from error
+
 
     def get_status(self):
         """

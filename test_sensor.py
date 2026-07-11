@@ -37,9 +37,9 @@ import sys
 # Change ONLY these two lines.
 # ---------------------------------------------------------------------
 
-from sensors.FurnaceTC import FurnaceTC
+from sensors.LightSensor import LightSensor
 
-SENSOR = FurnaceTC
+SENSOR = LightSensor
 PORT = "COM7"
 
 # ---------------------------------------------------------------------

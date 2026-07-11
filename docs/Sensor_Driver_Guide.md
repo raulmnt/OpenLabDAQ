@@ -4,7 +4,7 @@
 
 A sensor driver acts as a translator between a physical instrument and the Tube Furnace DAQ.
 
-Each instrument may use its own communication protocol (Arduino, RS-232, RS-485, USB, VISA, Modbus, etc.). The purpose of the sensor driver is to translate that protocol into the standard commands understood by the DAQ.
+Each instrument may use its own communication protocol (Arduino, RS-232, RS-485, USB, etc.). The purpose of the sensor driver is to translate that protocol into the standard commands understood by the DAQ.
 
 The internal communication with the instrument is completely up to the developer. However, every sensor driver must be implemented as a Python class that provides the standard DAQ interface described in this document.
 ---
@@ -39,6 +39,7 @@ NAME = "FurnaceTC"
 A sensor driver SHALL
 
 - Connect to one physical instrument.
+- verify connection
 - Disconnect from the instrument.
 - Return the current measurement.
 - Identify the sensor.
@@ -100,7 +101,7 @@ The constructor should not establish communication with the instrument.
 
 ### Purpose
 
-Establish communication with the instrument.
+Establish communication with the instrument. verify that the connected device is the expected instrument and raise an exception if the conection or verification fails.
 
 ### Input
 
@@ -179,6 +180,13 @@ Example
 ```python
 UNIT = "°C"
 ```
+
+### OPTIONAL METHODS
+
+Sensor drivers may implement additional methods, for example, get_status(), but the DAQ backbone will not call them.
+
+
+# For an example of sensor driver see FurnaceTC.py
 
 ---
 

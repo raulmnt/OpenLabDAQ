@@ -1,19 +1,28 @@
 {
-    "ports": {
-        "FurnaceTC": "COM7",
-        "Hornet": null,
-        "FlowController": null
+    "display": {
+        "title": "Tube Furnace DAQ"
     },
-
+    "sensors": {
+        "FurnaceTC": {
+            "enabled": true,
+            "port": "COM9"
+        },
+        "LightSensor": {
+            "enabled": true,
+            "port": "COM7"
+        },
+        "FlowController": {
+            "enabled": false,
+            "port": null
+        }
+    },
     "acquisition": {
         "period_ms": 1000
     },
-
     "logging": {
-        "default_directory": "Data"
+        "directory": "C:/Users/raulm/Documents/OpenLabDAQ/Data"
     },
-
     "history": {
-        "retention_hours": 24
+        "retention_hours": 72
     }
 }

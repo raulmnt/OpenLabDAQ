@@ -91,3 +91,18 @@ class History:
                 break
 
             self.records.popleft()
+
+    def get_latest_record(self):
+        """
+        Return the most recent acquisition record.
+    
+        Returns
+        -------
+        dict | None
+            Latest acquisition record, or None if history is empty.
+        """
+    
+        if not self.records:
+            return None
+    
+        return self.records[-1]

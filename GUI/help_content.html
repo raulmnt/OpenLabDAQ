@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>OpenLabDAQ Help</title>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            margin: 28px;
+            color: #222222;
+            background-color: #ffffff;
+        }
+
+        h1 {
+            font-size: 30px;
+            color: #234f72;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            font-size: 22px;
+            color: #234f72;
+            margin-top: 30px;
+            border-bottom: 1px solid #cccccc;
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        p {
+            margin-top: 6px;
+            margin-bottom: 12px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .note {
+            background-color: #eef5fa;
+            border: 1px solid #b9d3e5;
+            padding: 12px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .warning {
+            background-color: #fff4e5;
+            border: 1px solid #e5c28d;
+            padding: 12px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .button-name {
+            font-weight: bold;
+            color: #234f72;
+        }
+
+        code {
+            background-color: #eeeeee;
+            padding: 2px 5px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <h1>OpenLabDAQ</h1>
+
+    <p>
+        OpenLabDAQ is a laboratory data-acquisition program used to
+        connect instruments, display current measurements, plot recent
+        history, and save measurements to CSV files.
+    </p>
+
+
+    <h2>Quick Start</h2>
+
+    <h3>1. Configure the DAQ</h3>
+
+    <ol>
+
+        <li>
+            Make sure acquisition is stopped.
+        </li>
+
+        <li>
+            Click <span class="button-name">Configuration</span>.
+        </li>
+
+        <li>
+            Enable the sensors you want to use.
+        </li>
+
+        <li>
+            Select or enter the COM port assigned to each sensor.
+        </li>
+
+        <li>
+            Select the acquisition period.
+        </li>
+
+        <li>
+            Select the directory where CSV files will be saved.
+        </li>
+
+        <li>
+            Click <span class="button-name">Save</span>.
+        </li>
+
+    </ol>
+
+    <div class="note">
+
+        Configuration changes are used the next time acquisition is
+        started. You do not need to close OpenLabDAQ.
+
+    </div>
+
+
+    <h3>2. Start Acquisition</h3>
+
+    <p>
+        Click
+        <span class="button-name">STOPPED</span>.
+    </p>
+
+    <p>
+        OpenLabDAQ will connect to the enabled sensors. During this
+        process, the sensor panel displays
+        <strong>Connecting sensors...</strong>.
+    </p>
+
+    <p>
+        After connection, the button changes to
+        <span class="button-name">RUNNING</span>.
+        Current sensor values and plots will update automatically.
+    </p>
+
+
+    <h3>3. View Plots</h3>
+
+    <p>
+        Each sensor has its own plot.
+    </p>
+
+    <ul>
+
+        <li>
+            Use the <strong>History</strong> selector to display the
+            latest 5 minutes, 20 minutes, 2 hours, 6 hours, 1 day,
+            or 3 days.
+        </li>
+
+        <li>
+            Click the star beside a plot to pin it to the top.
+        </li>
+
+        <li>
+            Pinning several plots places them at the top in the order
+            they were pinned.
+        </li>
+
+        <li>
+            Scroll down to view the remaining plots.
+        </li>
+
+        <li>
+            Plot vertical ranges adjust automatically using the data
+            visible in the selected time window.
+        </li>
+
+    </ul>
+
+
+    <h3>4. Save Data</h3>
+
+    <p>
+        Data logging is available only while acquisition is running.
+    </p>
+
+    <ol>
+
+        <li>
+            Start acquisition.
+        </li>
+
+        <li>
+            Click <span class="button-name">LOAD</span>.
+        </li>
+
+        <li>
+            The button changes to
+            <span class="button-name">LOGGING</span>.
+        </li>
+
+        <li>
+            Measurements are written to a CSV file in the configured
+            saving directory.
+        </li>
+
+        <li>
+            Click <span class="button-name">LOGGING</span> again to
+            stop saving data.
+        </li>
+
+    </ol>
+
+    <div class="note">
+
+        Stopping acquisition also stops logging and returns the
+        logging button to LOAD.
+
+    </div>
+
+
+    <h3>5. Stop Acquisition</h3>
+
+    <p>
+        Click
+        <span class="button-name">RUNNING</span>.
+    </p>
+
+    <p>
+        OpenLabDAQ disconnects the sensors. The last measured values
+        remain visible, and their status indicators become gray.
+    </p>
+
+
+    <h2>Understanding History and Logging</h2>
+
+    <p>
+        Plot history is temporary and is stored in computer memory.
+        OpenLabDAQ keeps up to 72 hours during a continuous acquisition
+        session.
+    </p>
+
+    <p>
+        History resets when a new DAQ session begins or when the
+        program is closed.
+    </p>
+
+    <p>
+        Permanent data is saved only while the logging button displays
+        <strong>LOGGING</strong>.
+    </p>
+
+
+    <h2>Troubleshooting</h2>
+
+    <h3>Could not open COM port</h3>
+
+    <ul>
+
+        <li>
+            Verify that the instrument is powered.
+        </li>
+
+        <li>
+            Verify that the USB or serial cable is connected.
+        </li>
+
+        <li>
+            Check that the correct COM port is selected.
+        </li>
+
+        <li>
+            Close other software that may already be using the port.
+        </li>
+
+        <li>
+            Stop acquisition before changing the configuration.
+        </li>
+
+    </ul>
+
+
+    <h3>The Configuration button is disabled</h3>
+
+    <p>
+        Configuration cannot be changed while acquisition is running.
+        Stop acquisition first.
+    </p>
+
+
+    <h3>No CSV file is being created</h3>
+
+    <p>
+        Verify that acquisition is running and that the logging button
+        displays <strong>LOGGING</strong>.
+    </p>
+
+
+    <h3>A sensor does not connect</h3>
+
+    <p>
+        Check the selected COM port, cable, instrument power, and
+        sensor-specific communication settings.
+    </p>
+
+
+    <div class="warning">
+
+        OpenLabDAQ displays connection and acquisition errors when a
+        sensor driver cannot communicate with its instrument.
+
+    </div>
+
+
+    <h2>Additional Documentation</h2>
+
+    <p>
+        Project documentation, source-code links, instrument manuals,
+        and contact information can be added to this section later.
+    </p>
+
+    <!-- Example external link:
+
+    <p>
+        <a href="https://example.com">
+            Open online documentation
+        </a>
+    </p>
+
+    -->
+
+    <!-- Example local image:
+
+    Create GUI/images and add an image such as:
+
+    <img src="images/main_window.png"
+         alt="OpenLabDAQ main window"
+         width="700">
+
+    -->
+
+</body>
+
+</html>
