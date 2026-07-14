@@ -16,7 +16,6 @@ Driver behavior:
   address responds correctly.
 - read() returns one temperature value in degrees Celsius.
 - disconnect() closes the serial port.
-- read() never reconnects automatically.
 """
 
 import time

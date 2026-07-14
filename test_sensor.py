@@ -37,10 +37,10 @@ import sys
 # Change ONLY these two lines.
 # ---------------------------------------------------------------------
 
-from sensors.OmegaTC_Probe import OmegaTC_Probe
+from sensors.FurnaceTC import FurnaceTC
 
-SENSOR = OmegaTC_Probe
-PORT = "COM10"
+SENSOR = FurnaceTC
+PORT = "COM8"
 
 # ---------------------------------------------------------------------
 # Standard DAQ communication test.

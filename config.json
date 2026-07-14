@@ -4,19 +4,24 @@
     },
     "sensors": {
         "FurnaceTC": {
-            "enabled": false,
-            "port": "COM9",
-            "nickname": ""
+            "enabled": true,
+            "port": "COM8",
+            "nickname": "Furnace Temperature"
         },
-        "LightSensor": {
+        "Hornet": {
             "enabled": false,
             "port": "COM7",
-            "nickname": ""
+            "nickname": "RGA pressure"
+        },
+         "BusyBee": {
+            "enabled": false,
+            "port": "COM7",
+            "nickname": "Furnace Pressure"
         },
         "FlowController": {
             "enabled": false,
             "port": null,
-            "nickname": ""
+            "nickname": "Gas Flow"
         },
         "OmegaTC_10": {
             "enabled": true,
@@ -25,10 +30,10 @@
         }
     },
     "acquisition": {
-        "period_ms": 1000
+        "period_ms": 100
     },
     "logging": {
-        "directory": "C:/Users/raulm/Documents/OpenLabDAQ/Data"
+        "directory": "C:/Users/raulm/Desktop"
     },
     "history": {
         "retention_hours": 72
