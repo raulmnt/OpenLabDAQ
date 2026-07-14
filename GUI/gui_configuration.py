@@ -9,6 +9,7 @@ Operation
 - Allows the experimental-system title to be changed.
 - Allows configured sensors to be enabled or disabled.
 - Allows COM ports to be selected or typed manually.
+- Allows an optional display-only nickname for each sensor.
 - Provides fixed acquisition-period options.
 - Allows selection of the persistent logging directory.
 - Save writes the changes to config.json and closes the window.
@@ -68,7 +69,7 @@ class ConfigurationWindow(QDialog):
         self.setWindowTitle(
             "OpenLabDAQ Configuration"
         )
-        self.resize(650, 600)
+        self.resize(850, 600)
 
         main_layout = QVBoxLayout(self)
 
@@ -124,7 +125,7 @@ class ConfigurationWindow(QDialog):
 
     def create_sensor_section(self, main_layout):
         """
-        Create enable controls and COM-port selectors.
+        Create enable, COM-port, and nickname controls.
         """
 
         group_box = QGroupBox("Sensors")
@@ -137,16 +138,26 @@ class ConfigurationWindow(QDialog):
 
         sensor_layout = QGridLayout(group_box)
 
+        sensor_header = QLabel("Sensor")
         enabled_header = QLabel("Enabled")
         port_header = QLabel("COM port")
+        nickname_header = QLabel("GUI nickname")
 
-        enabled_header.setStyleSheet(
-            "font-weight: bold;"
-        )
-        port_header.setStyleSheet(
-            "font-weight: bold;"
-        )
+        for header in (
+            sensor_header,
+            enabled_header,
+            port_header,
+            nickname_header,
+        ):
+            header.setStyleSheet(
+                "font-weight: bold;"
+            )
 
+        sensor_layout.addWidget(
+            sensor_header,
+            0,
+            0,
+        )
         sensor_layout.addWidget(
             enabled_header,
             0,
@@ -156,6 +167,11 @@ class ConfigurationWindow(QDialog):
             port_header,
             0,
             2,
+        )
+        sensor_layout.addWidget(
+            nickname_header,
+            0,
+            3,
         )
 
         detected_ports = self.get_detected_ports()
@@ -180,7 +196,7 @@ class ConfigurationWindow(QDialog):
 
             port_selector = QComboBox()
             port_selector.setEditable(True)
-            port_selector.setMinimumWidth(180)
+            port_selector.setMinimumWidth(160)
             port_selector.setToolTip(
                 "Select a detected COM port or type one manually."
             )
@@ -226,6 +242,25 @@ class ConfigurationWindow(QDialog):
                 port_selector.setEnabled
             )
 
+            nickname_edit = QLineEdit(
+                str(
+                    settings.get(
+                        "nickname",
+                        "",
+                    )
+                    or ""
+                )
+            )
+            nickname_edit.setMaxLength(60)
+            nickname_edit.setPlaceholderText(
+                "Optional"
+            )
+            nickname_edit.setMinimumWidth(220)
+            nickname_edit.setToolTip(
+                "Optional name used only in the sensor panel and plot title. "
+                "History and CSV headers keep the official sensor name."
+            )
+
             sensor_layout.addWidget(
                 sensor_label,
                 row,
@@ -241,10 +276,16 @@ class ConfigurationWindow(QDialog):
                 row,
                 2,
             )
+            sensor_layout.addWidget(
+                nickname_edit,
+                row,
+                3,
+            )
 
             self.sensor_controls[sensor_name] = {
                 "enabled": enabled_checkbox,
                 "port": port_selector,
+                "nickname": nickname_edit,
             }
 
         main_layout.addWidget(group_box)
@@ -457,6 +498,7 @@ class ConfigurationWindow(QDialog):
             return
 
         enabled_ports = []
+        enabled_display_names = {}
 
         for sensor_name, controls in (
             self.sensor_controls.items()
@@ -468,6 +510,12 @@ class ConfigurationWindow(QDialog):
             port = (
                 controls["port"]
                 .currentText()
+                .strip()
+            )
+
+            nickname = (
+                controls["nickname"]
+                .text()
                 .strip()
             )
 
@@ -500,6 +548,36 @@ class ConfigurationWindow(QDialog):
                     normalized_port
                 )
 
+                display_name = (
+                    nickname
+                    if nickname
+                    else sensor_name
+                )
+
+                normalized_display_name = (
+                    display_name.casefold()
+                )
+
+                if normalized_display_name in enabled_display_names:
+                    other_sensor = enabled_display_names[
+                        normalized_display_name
+                    ]
+
+                    QMessageBox.warning(
+                        self,
+                        "Duplicate GUI Name",
+                        (
+                            f"{sensor_name} and {other_sensor} "
+                            f"would both be displayed as "
+                            f"'{display_name}'."
+                        ),
+                    )
+                    return
+
+                enabled_display_names[
+                    normalized_display_name
+                ] = sensor_name
+
             self.config["sensors"][sensor_name][
                 "enabled"
             ] = enabled
@@ -508,6 +586,10 @@ class ConfigurationWindow(QDialog):
             self.config["sensors"][sensor_name][
                 "port"
             ] = port if port else None
+
+            self.config["sensors"][sensor_name][
+                "nickname"
+            ] = nickname
 
         logging_directory = (
             self.directory_edit.text().strip()

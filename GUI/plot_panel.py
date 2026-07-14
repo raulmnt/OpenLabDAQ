@@ -10,6 +10,7 @@ Operation
 - Uses clock time on the x-axis.
 - Automatically rescales each y-axis using only visible data.
 - Allows plots to be pinned to the top of the scrollable panel.
+- Uses optional sensor nicknames only for plot titles.
 """
 
 import math
@@ -42,13 +43,17 @@ class PlotPanel(QWidget):
         "3 days": 4320,
     }
 
-    def __init__(self):
+    def __init__(self, sensor_nicknames=None):
         super().__init__()
+
+        # Maps official sensor names to optional GUI nicknames.
+        self.sensor_nicknames = dict(sensor_nicknames or {})
 
         self.plot_widgets = {}
         self.plot_curves = {}
         self.plot_containers = {}
         self.pin_buttons = {}
+        self.title_labels = {}
 
         # Stores pinned plots in the order they were pinned.
         self.pinned_columns = []
@@ -64,6 +69,23 @@ class PlotPanel(QWidget):
 
         self.create_history_controls(main_layout)
         self.create_scroll_area(main_layout)
+
+    # ---------------------------------------------------------
+    # Nicknames
+    # ---------------------------------------------------------
+
+    def set_sensor_nicknames(self, sensor_nicknames):
+        """
+        Replace the nickname mapping and refresh existing titles.
+        """
+
+        self.sensor_nicknames = dict(sensor_nicknames or {})
+
+        for column, title_label in self.title_labels.items():
+            self.update_title_label(
+                title_label,
+                column,
+            )
 
     # ---------------------------------------------------------
     # Layout
@@ -252,6 +274,7 @@ class PlotPanel(QWidget):
         self.plot_curves = {}
         self.plot_containers = {}
         self.pin_buttons = {}
+        self.title_labels = {}
 
         # Remove pins belonging to measurements no longer present.
         self.pinned_columns = [
@@ -313,11 +336,16 @@ class PlotPanel(QWidget):
             self.toggle_pin(name)
         )
 
-        title_label = QLabel(column)
+        title_label = QLabel()
         title_label.setStyleSheet("""
             font-size: 26px;
             font-weight: bold;
         """)
+
+        self.update_title_label(
+            title_label,
+            column,
+        )
 
         title_layout.addWidget(pin_button)
         title_layout.addWidget(title_label)
@@ -387,6 +415,69 @@ class PlotPanel(QWidget):
         self.plot_widgets[column] = plot_widget
         self.plot_curves[column] = curve
         self.pin_buttons[column] = pin_button
+        self.title_labels[column] = title_label
+
+    # ---------------------------------------------------------
+    # Display names
+    # ---------------------------------------------------------
+
+    def update_title_label(self, label, column):
+        """
+        Apply the GUI nickname while preserving the unit suffix.
+        """
+
+        display_name = self.get_display_column_name(column)
+
+        label.setText(display_name)
+
+        if display_name != column:
+            label.setToolTip(
+                f"History and CSV name: {column}"
+            )
+        else:
+            label.setToolTip("")
+
+    def get_display_column_name(self, column):
+        """
+        Replace an official sensor name with its optional nickname.
+
+        Example
+        -------
+        OmegaTC_1 (°C) -> Chamber Temperature (°C)
+        """
+
+        sensor_names = sorted(
+            self.sensor_nicknames,
+            key=len,
+            reverse=True,
+        )
+
+        for sensor_name in sensor_names:
+
+            is_exact_name = column == sensor_name
+            has_unit_suffix = column.startswith(
+                f"{sensor_name} ("
+            )
+
+            if not is_exact_name and not has_unit_suffix:
+                continue
+
+            nickname = str(
+                self.sensor_nicknames.get(
+                    sensor_name,
+                    "",
+                )
+                or ""
+            ).strip()
+
+            if not nickname:
+                return column
+
+            suffix = column[len(sensor_name):]
+
+            return f"{nickname}{suffix}"
+
+        return column
 
     # ---------------------------------------------------------
     # Plot data

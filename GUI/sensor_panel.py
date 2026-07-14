@@ -1,3 +1,13 @@
+"""
+GUI/sensor_panel.py
+
+Displays the latest value and connection status for every measurement
+stored in History.
+
+Sensor nicknames affect only the GUI. History and CSV column names remain
+unchanged.
+"""
+
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -8,8 +18,11 @@ from PySide6.QtWidgets import (
 
 class SensorPanel(QWidget):
 
-    def __init__(self):
+    def __init__(self, sensor_nicknames=None):
         super().__init__()
+
+        # Maps official sensor names to optional GUI nicknames.
+        self.sensor_nicknames = dict(sensor_nicknames or {})
 
         self.sensor_rows = {}
 
@@ -23,6 +36,21 @@ class SensorPanel(QWidget):
 
         self.layout.addWidget(self.message_label)
         self.layout.addStretch()
+
+    # ---------------------------------------------------------
+
+    def set_sensor_nicknames(self, sensor_nicknames):
+        """
+        Replace the nickname mapping and refresh existing labels.
+        """
+
+        self.sensor_nicknames = dict(sensor_nicknames or {})
+
+        for column, row in self.sensor_rows.items():
+            self.update_name_label(
+                row["name"],
+                column,
+            )
 
     # ---------------------------------------------------------
 
@@ -78,11 +106,16 @@ class SensorPanel(QWidget):
                 font-size: 24px;
             """)
 
-            name_label = QLabel(column)
+            name_label = QLabel()
             name_label.setStyleSheet("""
                 font-size: 22px;
                 font-weight: bold;
             """)
+
+            self.update_name_label(
+                name_label,
+                column,
+            )
 
             value_label = QLabel("----")
             value_label.setStyleSheet("""
@@ -101,30 +134,30 @@ class SensorPanel(QWidget):
 
             self.sensor_rows[column] = {
                 "status": status_label,
+                "name": name_label,
                 "value": value_label,
             }
 
         self.layout.addStretch()
-    
-    #---------------------------------------------------------
-    
+
+    # ---------------------------------------------------------
+
     def set_connecting(self):
         """
         Show an immediate connection message while the DAQ connects.
         """
-     
+
         self.clear_layout()
         self.sensor_rows = {}
-     
+
         self.message_label = QLabel("Connecting sensors...")
         self.message_label.setStyleSheet("""
             font-size: 22px;
             font-weight: bold;
         """)
-     
+
         self.layout.addWidget(self.message_label)
         self.layout.addStretch()
-
 
     # ---------------------------------------------------------
 
@@ -136,6 +169,68 @@ class SensorPanel(QWidget):
                 color: gray;
                 font-size: 24px;
             """)
+
+    # ---------------------------------------------------------
+
+    def update_name_label(self, label, column):
+        """
+        Apply the GUI nickname while preserving the unit suffix.
+        """
+
+        display_name = self.get_display_column_name(column)
+
+        label.setText(display_name)
+
+        if display_name != column:
+            label.setToolTip(
+                f"History and CSV name: {column}"
+            )
+        else:
+            label.setToolTip("")
+
+    # ---------------------------------------------------------
+
+    def get_display_column_name(self, column):
+        """
+        Replace an official sensor name with its optional nickname.
+
+        Example
+        -------
+        OmegaTC_1 (°C) -> Chamber Temperature (°C)
+        """
+
+        sensor_names = sorted(
+            self.sensor_nicknames,
+            key=len,
+            reverse=True,
+        )
+
+        for sensor_name in sensor_names:
+
+            is_exact_name = column == sensor_name
+            has_unit_suffix = column.startswith(
+                f"{sensor_name} ("
+            )
+
+            if not is_exact_name and not has_unit_suffix:
+                continue
+
+            nickname = str(
+                self.sensor_nicknames.get(
+                    sensor_name,
+                    "",
+                )
+                or ""
+            ).strip()
+
+            if not nickname:
+                return column
+
+            suffix = column[len(sensor_name):]
+
+            return f"{nickname}{suffix}"
+
+        return column
 
     # ---------------------------------------------------------
 

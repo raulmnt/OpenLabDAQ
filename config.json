@@ -4,16 +4,24 @@
     },
     "sensors": {
         "FurnaceTC": {
-            "enabled": true,
-            "port": "COM9"
+            "enabled": false,
+            "port": "COM9",
+            "nickname": ""
         },
         "LightSensor": {
-            "enabled": true,
-            "port": "COM7"
+            "enabled": false,
+            "port": "COM7",
+            "nickname": ""
         },
         "FlowController": {
             "enabled": false,
-            "port": null
+            "port": null,
+            "nickname": ""
+        },
+        "OmegaTC_10": {
+            "enabled": true,
+            "port": "COM10",
+            "nickname": "Probe Temperature"
         }
     },
     "acquisition": {

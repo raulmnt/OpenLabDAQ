@@ -7,19 +7,25 @@ Operation
 ---------
 - The application name remains OpenLabDAQ.
 - The large system title is loaded from config.json.
-- Saving the configuration updates the title immediately.
+- Saving the configuration updates the title and sensor nicknames.
 - RUN connects the DAQ and starts continuous acquisition.
 - STOP disconnects the DAQ.
 - LOAD starts CSV logging.
 - LOGGING stops CSV logging.
 - All displayed measurements are read only from History.
+- Sensor nicknames affect only the GUI.
 """
 
 import sys
 from pathlib import Path
+from PySide6.QtGui import QIcon
+import ctypes
 
 # Allow this file to import modules from the project root.
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+ICON_FILE = PROJECT_ROOT / "assets" / "OpenLabDAQ.ico"
+APP_ID = "OpenLab.OpenLabDAQ.1.0"
 
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
@@ -163,8 +169,14 @@ class MainWindow(QMainWindow):
             self.logging_pressed
         )
 
-        self.sensor_panel = SensorPanel()
-        self.plot_panel = PlotPanel()
+        sensor_nicknames = self.get_sensor_nicknames()
+
+        self.sensor_panel = SensorPanel(
+            sensor_nicknames
+        )
+        self.plot_panel = PlotPanel(
+            sensor_nicknames
+        )
 
         left_layout.addWidget(self.run_button)
         left_layout.addWidget(self.logging_button)
@@ -177,7 +189,7 @@ class MainWindow(QMainWindow):
         self.main_layout.addLayout(body_layout)
 
     # ---------------------------------------------------------
-    # Display title
+    # Display configuration
     # ---------------------------------------------------------
 
     @staticmethod
@@ -196,13 +208,46 @@ class MainWindow(QMainWindow):
             "OpenLabDAQ",
         )
 
-    def reload_display_title(self):
+    @staticmethod
+    def get_sensor_nicknames():
         """
-        Reload the title after configuration is saved.
+        Read optional display-only sensor nicknames.
+        """
+
+        config = load_config()
+
+        return {
+            sensor_name: str(
+                settings.get(
+                    "nickname",
+                    "",
+                )
+                or ""
+            ).strip()
+            for sensor_name, settings in config.get(
+                "sensors",
+                {},
+            ).items()
+        }
+
+    def reload_display_configuration(self):
+        """
+        Reload the system title and sensor nicknames after Save.
         """
 
         self.title_label.setText(
             self.get_display_title()
+        )
+
+        sensor_nicknames = (
+            self.get_sensor_nicknames()
+        )
+
+        self.sensor_panel.set_sensor_nicknames(
+            sensor_nicknames
+        )
+        self.plot_panel.set_sensor_nicknames(
+            sensor_nicknames
         )
 
     # ---------------------------------------------------------
@@ -221,6 +266,9 @@ class MainWindow(QMainWindow):
         Display the connection message before beginning the
         blocking sensor connection process.
         """
+
+        # Reload nicknames in case config.json was edited externally.
+        self.reload_display_configuration()
 
         self.sensor_panel.set_connecting()
 
@@ -463,13 +511,13 @@ class MainWindow(QMainWindow):
         """
         Open the configuration window.
 
-        The title is refreshed when the user clicks Save.
+        Display labels are refreshed when the user clicks Save.
         """
 
         self.configuration_window = ConfigurationWindow()
 
         self.configuration_window.accepted.connect(
-            self.reload_display_title
+            self.reload_display_configuration
         )
 
         self.configuration_window.show()
@@ -537,13 +585,23 @@ class MainWindow(QMainWindow):
 
 def main():
 
+    # Tell Windows this is OpenLabDAQ, not the Python interpreter.
+    if sys.platform == "win32":
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+            APP_ID
+        )
+
     app = QApplication(sys.argv)
 
+    icon = QIcon(str(ICON_FILE))
+
+    app.setWindowIcon(icon)
+
     window = MainWindow()
+    window.setWindowIcon(icon)
     window.show()
 
     sys.exit(app.exec())
-
 
 if __name__ == "__main__":
     main()
