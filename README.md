@@ -18,12 +18,14 @@ It connects multiple sensors, displays live values and plots, keeps recent data 
 
 ## Quick Start
 
-1. Create the virtual environment and install `requirements.txt`.
-2. Run `OpenLabDAQ.bat`, or start `GUI/gui.py` with the project environment.
-3. Open **Configuration**.
-4. Enable sensors, assign COM ports, and set optional GUI nicknames.
-5. Click **STOPPED** to connect and begin acquisition.
-6. Click **LOAD** to start CSV logging and create a matching logbook.
+1. Install the required Python packages.
+2. Add and test the required sensor drivers following the
+   [Sensor Driver Guide](docs/Sensor_Driver_Guide.md).
+3. Configure the enabled sensors, COM ports, acquisition period, and saving directory.
+4. Run OpenLabDAQ using either the graphical interface or `auto_mode.py`.
+
+Detailed setup and operating instructions are available in 
+[Getting Started] (docs/Getting_Started.md)
 
 ## Repository Structure
 

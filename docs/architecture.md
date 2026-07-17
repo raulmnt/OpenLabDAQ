@@ -163,7 +163,16 @@ Edits `config.json`, including sensor enable state, COM port, nickname, acquisit
 
 ### `auto_mode.py`
 
-Runs the DAQ without the graphical interface. It uses the same configuration, sensor drivers, History, and Logger as the GUI.
+Provides a non-GUI way to run OpenLabDAQ. It can be used as a backup if the graphical interface cannot be started, or when the user prefers unattended acquisition without the GUI. It uses the same `daq.py`, sensor drivers, History, and Logger as the graphical interface.
+
+When executed, it:
+
+- Loads `config.json`
+- Initializes and connects all enabled sensors
+- Starts acquisition immediately
+- Saves measurements automatically
+- Continues running until stopped by the user
+
 
 ### `test_sensor.py`
 
