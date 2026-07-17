@@ -5,7 +5,7 @@ This guide covers the basic steps required to install, configure, and run OpenLa
 For information about how the source files work together, see
 [Architecture](architecture.md).
 
-For requirements when adding a new instrument, see
+For requirements when adding or modifying an instrument driver, see
 [Sensor Driver Guide](Sensor_Driver_Guide.md).
 
 ---
@@ -31,12 +31,20 @@ Python projects on the computer.
 
 ---
 
-## 2. Add and Test Sensors
+## 2. Use, Add, and Test Sensors
 
-Each instrument used by OpenLabDAQ requires a compatible Python driver inside
-the `sensors/` directory.
+OpenLabDAQ includes a growing library of sensor drivers in the `sensors/`
+directory.
 
-A driver must provide the standard OpenLabDAQ interface:
+Before creating a new driver, check whether a compatible driver is already
+included. An existing driver may be:
+
+- Used directly with the supported instrument
+- Adapted for a similar model
+- Modified for a different communication configuration
+- Used as an example when developing a new driver
+
+Each driver provides the standard OpenLabDAQ interface:
 
 ```python
 connect()
@@ -44,15 +52,19 @@ read()
 disconnect()
 ```
 
-Before using a new driver with the complete DAQ, test it with:
+When adding or modifying a driver, test it with:
 
 ```powershell
 .\.venv\Scripts\python.exe test_sensor.py
 ```
 
-Follow the instructions in
-[Sensor Driver Guide](Sensor_Driver_Guide.md) when creating or reviewing a
-driver.
+Follow the
+[Sensor Driver Guide](Sensor_Driver_Guide.md)
+when creating, modifying, or reviewing a driver.
+
+The long-term goal is to build a shared library of drivers for commonly used
+laboratory instruments. Users are encouraged to contribute tested drivers so
+that other laboratories can reuse or adapt them for their own systems.
 
 ---
 
