@@ -1,168 +1,185 @@
-# Tube Furnace DAQ Architecture
+# OpenLabDAQ Architecture
 
 ## Purpose
 
-The Tube Furnace DAQ is designed to acquire measurements from multiple laboratory instruments using a simple, modular architecture.
+OpenLabDAQ acquires synchronized measurements from multiple laboratory instruments while keeping instrument communication, acquisition, storage, and display separate.
 
-The system separates the responsibilities of communication, data acquisition, temporary storage, permanent storage, and visualization into independent modules.
+The architecture is intentionally simple:
 
-Each module has a single responsibility and communicates through well-defined interfaces.
+- Sensor drivers communicate with instruments.
+- `daq.py` coordinates acquisition.
+- `history.py` keeps recent records in memory.
+- `logger.py` writes permanent CSV files.
+- The GUI reads History and controls the DAQ.
+- `auto_mode.py` runs the same DAQ backbone without the GUI.
 
----
+## Data Flow
 
-# Overall Architecture
+```text
+config.json
+    │
+    ▼
+config.py
+    │
+    ▼
+daq.py
+    ├── sensors/<Driver>.py ──► physical instruments
+    │
+    ├──► history.py ──► GUI values and plots
+    │                 └──► Export displayed data
+    │
+    └──► logger.py ──► CSV file, when logging is enabled
 
+GUI/gui.py
+    ├── controls daq.py
+    ├── reads history.py
+    └── controls logbook.py ──► matching _logbook.txt file
+
+auto_mode.py
+    └── runs daq.py without the GUI
 ```
-             config.json
-                  │
-                  ▼
-              config.py
-                  │
-                  ▼
-               main.py
-                  │
-      ┌───────────┼───────────┐
-      ▼           ▼           ▼
-  Sensor 1    Sensor 2    Sensor N
-                  │
-                  ▼
-        Acquisition Record
-                  │
-         ┌────────┴────────┐
-         ▼                 ▼
-    history.py        logger.py
-                           │
-                           ▼
-                          CSV
 
-                  │
-                  ▼
-               gui.py
+## Acquisition Record
+
+Each acquisition cycle produces one dictionary with a single timestamp and one value from every enabled sensor.
+
+```python
+{
+    "Timestamp": datetime_object,
+    "FurnaceTC (°C)": 523,
+    "HornetRGA (Torr)": 4.9e-8,
+    "MassFlow (scc/m)": 10.0,
+}
 ```
 
----
+This record is the standard data format shared by the DAQ, History, Logger, and GUI.
 
-# Module Responsibilities
+## Module Responsibilities
 
-## config.json
+### `config.json`
 
-Contains all experiment-dependent settings.
+Stores user-selectable settings:
 
-Examples include
-
-- Communication ports
+- System title
+- Enabled sensors
+- COM ports
+- Optional GUI nicknames
 - Acquisition period
 - Logging directory
-- Enabled sensors
+- History retention
 
-Changing experiments should only require modifying this file.
+The sensor key is the official driver name. A nickname changes only what is displayed in the GUI; History and CSV headers keep the official name.
 
----
+### `config.py`
 
-## config.py
+Loads and saves `config.json`.
 
-Loads the configuration file and provides access to its contents.
+### `sensors/`
 
----
+Each file contains one sensor driver. A driver translates an instrument protocol into the standard methods:
 
-## Sensor Drivers
+```python
+connect()
+read()
+disconnect()
+```
 
-Each sensor driver communicates with one physical instrument.
+Drivers do not timestamp, log, plot, or read the project configuration.
 
-Its purpose is to translate the instrument's native communication protocol into the standard DAQ interface.
+### `daq.py`
 
-Every sensor driver follows the communication standard defined in **Sensor_Driver_Guide.md**.
+The DAQ backbone is the only project module that communicates with sensor drivers.
 
----
+It:
 
-## main.py
+- Loads enabled sensors from configuration
+- Connects and disconnects sensors
+- Requests one value from each sensor
+- Creates one timestamp per acquisition cycle
+- Builds the acquisition record
+- Sends records to History
+- Sends records to Logger when logging is enabled
 
-The main program coordinates the entire DAQ.
+### `history.py`
 
-Responsibilities
+Keeps recent acquisition records in RAM.
 
-- Read the configuration.
-- Initialize enabled sensors.
-- Control the acquisition timing.
-- Request one measurement from every enabled sensor.
-- Generate one timestamp per acquisition cycle.
-- Assemble one acquisition record.
-- Send the acquisition record to the History module.
-- Send the acquisition record to the Logger module.
+History supports:
 
-The main program does not know how any individual instrument communicates.
+- Current sensor values
+- Live plots
+- Time-window selection
+- Export of displayed data
 
----
+History is temporary. It resets when a new DAQ session starts or the program closes.
 
-## history.py
+### `logger.py`
 
-Stores recent acquisition records in RAM.
+Writes acquisition records to CSV files.
 
-Purpose
+Logger creates the file, writes the header, appends records, and exposes the active file path so the GUI can create a matching logbook.
 
-Provide fast access to recent data for visualization.
+Logger does not decide when logging starts or stops.
 
-History is temporary storage only.
+### `logbook.py`
 
----
+Creates a human-readable text file paired with the CSV file.
 
-## logger.py
+It stores:
 
-Writes acquisition records to permanent CSV files.
+- Experiment information
+- Sample
+- Gas
+- Operator
+- General notes
+- Timestamped events
+- Session start and end times
 
-Logger is responsible only for permanent storage.
+The logbook is independent of the measurement CSV.
 
----
+### `GUI/gui.py`
 
-## gui.py
+Controls the user workflow:
 
-Displays the current state of the experiment.
+- Start and stop acquisition
+- Start and stop logging
+- Collect run information
+- Add timestamped events
+- Open configuration and help
 
-The GUI reads acquisition records but does not communicate directly with sensors.
+The GUI does not communicate directly with instruments.
 
----
+### `GUI/sensor_panel.py`
 
-# Acquisition Cycle
+Displays the latest value and connection status for each measurement.
 
-During every acquisition period, the DAQ performs the following sequence.
+### `GUI/plot_panel.py`
 
-1. Wait until the next acquisition period.
-2. Generate the current timestamp.
-3. Read every enabled sensor.
-4. Assemble one acquisition record.
-5. Send the acquisition record to History.
-6. Send the acquisition record to Logger.
-7. Repeat.
+Creates plots automatically from History columns. It also manages plot pinning, visible time windows, and export of the displayed History range.
 
----
+### `GUI/gui_configuration.py`
 
-# Acquisition Record
+Edits `config.json`, including sensor enable state, COM port, nickname, acquisition period, title, and logging directory.
 
-One acquisition record represents one acquisition cycle.
+### `auto_mode.py`
 
-It contains
+Runs the DAQ without the graphical interface. It uses the same configuration, sensor drivers, History, and Logger as the GUI.
 
-- Timestamp
-- One measurement from every enabled sensor
+### `test_sensor.py`
 
-Example
+Applies the standard driver lifecycle test:
 
-| Timestamp | FurnaceTC (°C) | BusyBee (Torr) | Hornet (Torr) |
-| ---------- | -------------- | -------------- | ------------- |
-| 12:00:00 | 1000.2 | 0.52 | 0.48 |
+```text
+create → connect → read → disconnect → confirm read fails
+```
 
-The acquisition record is the standard data format exchanged between the DAQ backbone modules.
+## Design Rules
 
----
-
-# Design Philosophy
-
-The Tube Furnace DAQ follows the following principles.
-
-- One responsibility per module.
-- Simple, explicit architecture.
-- Experiment settings belong in `config.json`.
-- Sensor drivers translate instrument protocols into the standard DAQ interface.
-- The backbone should not require modification when experiments change.
-- Every module should be independently testable.
-- Communication between modules should use well-defined interfaces.
+- One clear responsibility per module
+- Only sensor drivers know instrument protocols
+- Only `daq.py` talks to sensor drivers
+- The GUI reads data from History
+- Configuration is the source of experiment-dependent settings
+- History is temporary; Logger is permanent
+- Sensor drivers return values or raise clear exceptions
+- Adding a sensor should not require changes to the DAQ backbone

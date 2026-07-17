@@ -2,196 +2,155 @@
 
 ## Purpose
 
-A sensor driver acts as a translator between a physical instrument and the Tube Furnace DAQ.
+A sensor driver translates one instrument's communication protocol into the standard OpenLabDAQ interface.
 
-Each instrument may use its own communication protocol (Arduino, RS-232, RS-485, USB, etc.). The purpose of the sensor driver is to translate that protocol into the standard commands understood by the DAQ.
+The protocol may be Arduino serial, RS-232, RS-485, Modbus, USB, or another command format. OpenLabDAQ does not need to know those details.
 
-The internal communication with the instrument is completely up to the developer. However, every sensor driver must be implemented as a Python class that provides the standard DAQ interface described in this document.
----
+## Naming
 
-# Naming Convention
+The following names must match exactly:
 
-Each sensor has one canonical name.
-
-The following must match exactly:
-
-- Physical label on the instrument
 - Python filename
 - Python class name
-- Sensor identifier (`NAME`)
-- Configuration file entry
+- `NAME`
+- Sensor key in `config.json`
 
-Example
+Example:
 
-Sensor name: `FurnaceTC`
-
-```
-FurnaceTC.py
+```text
+sensors/FurnaceTC.py
 class FurnaceTC
 NAME = "FurnaceTC"
 "FurnaceTC" in config.json
 ```
 
----
+A physical label should use the same official name when practical. Experiment-specific descriptions belong in the optional GUI nickname.
 
-# Responsibilities
-
-A sensor driver SHALL
-
-- Connect to one physical instrument.
-- verify connection
-- Disconnect from the instrument.
-- Return the current measurement.
-- Identify the sensor.
-- Report the engineering unit.
-
-A sensor driver SHALL NOT
-
-- Save files.
-- Plot data.
-- Generate timestamps.
-- Communicate with other sensors.
-- Read the configuration file.
-- Know about experiments.
-- Know about History.
-- Know about Logger.
-- Know about the GUI.
-
-Its only responsibility is to communicate with one physical instrument and translate its native protocol into the standard DAQ interface.
-
----
-
-# Standard DAQ Interface
-
-Every sensor driver must implement the following interface exactly.
-
-The DAQ backbone communicates with every sensor driver using only these commands.
-
-No additional commands are required.
-
----
-
-## Constructor
+## Required Interface
 
 ```python
 sensor = Sensor(port)
+sensor.connect()
+value = sensor.read()
+sensor.disconnect()
 ```
 
-### Input
-
-```
-Communication port
-```
-
-Example
-
-```
-COM8
-```
-
-### Purpose
-
-Store the communication settings.
-
-The constructor should not establish communication with the instrument.
-
----
-
-## connect()
-
-### Purpose
-
-Establish communication with the instrument. verify that the connected device is the expected instrument and raise an exception if the conection or verification fails.
-
-### Input
-
-None.
-
-### Output
-
-The sensor is connected and ready to acquire data.
-
----
-
-## disconnect()
-
-### Purpose
-
-Close communication with the instrument.
-
-### Input
-
-None.
-
-### Output
-
-Communication is closed.
-
----
-
-## read()
-
-### Purpose
-
-Return the current measurement.
-
-### Input
-
-None.
-
-### Output
-
-A single floating-point value.
-
-Example
+### Constructor
 
 ```python
-1000.25
+def __init__(self, port):
 ```
 
-The value shall already be converted into engineering units.
+The constructor stores settings only. It should not open the instrument connection.
 
-The driver shall not print, plot, timestamp, or save the measurement.
+### `connect()`
 
----
+Opens communication and verifies that the expected instrument responds.
+
+Verification depends on the instrument:
+
+- Arduino: request a programmed identity
+- Addressed RS-485 device: verify the expected address responds
+- Instrument with serial-number query: optionally verify the serial number
+- Other instruments: validate a protocol-specific response
+
+Opening a COM port alone is not sufficient verification.
+
+Repeated calls may safely return when already connected.
+
+### `read()`
+
+Returns one measurement already converted to engineering units.
+
+```python
+return 523.0
+```
+
+`read()` must:
+
+- Require an existing connection
+- Never reconnect automatically
+- Validate the response
+- Return a numerical value
+- Raise a descriptive exception on failure
+
+### `disconnect()`
+
+Closes communication safely and sets the connection object to `None`.
+
+After disconnection, `read()` must fail clearly.
 
 ## Required Constants
 
-Every sensor driver must define the following constants.
-
-### NAME
-
-Unique sensor identifier.
-
-Example
-
 ```python
 NAME = "FurnaceTC"
-```
-
----
-
-### UNIT
-
-Engineering unit returned by `read()`.
-
-Example
-
-```python
 UNIT = "°C"
 ```
 
-### OPTIONAL METHODS
+Drivers may define additional constants such as baud rate, Modbus address, timeout, or register address.
 
-Sensor drivers may implement additional methods, for example, get_status(), but the DAQ backbone will not call them.
+## Driver Responsibilities
 
+A driver shall:
 
-# For an example of sensor driver see FurnaceTC.py
+- Connect to one physical instrument
+- Verify communication
+- Read one measurement
+- Convert the value to engineering units
+- Validate framing, checksum, CRC, address, and response format when applicable
+- Raise clear errors
 
----
+A driver shall not:
 
-# Acceptance Test
+- Save files
+- Generate timestamps
+- Plot data
+- Read `config.json`
+- Access History, Logger, or the GUI
+- Automatically reopen a disconnected port
+- Print routine status messages during GUI operation
 
-Every sensor driver shall pass the standard `test_sensor.py` program without modifying the test logic. Read instructions on the test_sensor.py file.
+## Error Handling
 
-If additional modifications are required, the sensor driver does not comply with the Tube Furnace DAQ communication standard.
+Return a valid numerical value or raise an exception. Do not return `None` for communication failures.
+
+Example:
+
+```python
+if self.serial is None or not self.serial.is_open:
+    raise RuntimeError(f"{self.NAME} is not connected.")
+```
+
+When opening fails, close any partially opened connection before raising the final error.
+
+## Optional Methods
+
+Drivers may include instrument-specific methods such as:
+
+```python
+get_status()
+read_serial_number()
+set_zero()
+```
+
+The DAQ backbone calls only:
+
+```python
+connect()
+read()
+disconnect()
+```
+
+## Acceptance Test
+
+Every driver must pass `test_sensor.py` without changing the test logic.
+
+The expected lifecycle is:
+
+1. Construct the driver.
+2. Connect.
+3. Read a valid value.
+4. Disconnect.
+5. Confirm that another `read()` fails.
+
+A driver that reconnects inside `read()` does not comply with the OpenLabDAQ interface.

@@ -5,11 +5,11 @@
     "sensors": {
         "FurnaceTC": {
             "enabled": true,
-            "port": "COM8",
+            "port": "COM9",
             "nickname": "Furnace Temperature"
         },
         "HornetRGA": {
-            "enabled": true,
+            "enabled": false,
             "port": "COM11",
             "nickname": "RGA pressure"
         },
@@ -19,7 +19,7 @@
             "nickname": "Furnace Pressure"
         },
         "MassFlow": {
-            "enabled": true,
+            "enabled": false,
             "port": "COM12",
             "nickname": "Gas Flow"
         },
