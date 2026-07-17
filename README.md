@@ -4,6 +4,22 @@ OpenLabDAQ is a modular Python data-acquisition program for laboratory instrumen
 
 It connects multiple sensors, displays live values and plots, keeps recent data in memory, and saves synchronized measurements to CSV files. New instruments are added through independent sensor drivers without redesigning the DAQ, logger, history, or GUI.
 
+## Instrument Support
+
+OpenLabDAQ can work with any laboratory instrument that can communicate with
+the computer, but each instrument requires a compatible sensor driver.
+
+A sensor driver translates the instrument's communication protocol into the standard OpenLabDAQ
+commands:
+
+```python
+connect()
+read()
+disconnect()
+```
+
+Before creating a new driver, check the `sensors/` directory for an existing compatible driver. Existing drivers may be used directly or adapted for similar instruments.
+
 ## Main Features
 
 - Configuration-driven sensor loading
@@ -14,7 +30,7 @@ It connects multiple sensors, displays live values and plots, keeps recent data 
 - Run metadata and timestamped event logbooks
 - Export of the currently displayed History range
 - GUI and non-GUI operation
-- Standard driver interface and acceptance test
+- Standard driver interface and acceptance testing
 
 ## Quick Start
 
