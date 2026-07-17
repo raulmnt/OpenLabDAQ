@@ -11,8 +11,10 @@ Operation
 - Automatically rescales each y-axis using only visible data.
 - Allows plots to be pinned to the top of the scrollable panel.
 - Uses optional sensor nicknames only for plot titles.
+- Exports all records in the currently displayed history window to CSV.
 """
 
+import csv
 import math
 from datetime import timedelta
 
@@ -21,8 +23,10 @@ import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -132,8 +136,23 @@ class PlotPanel(QWidget):
             self.window_changed
         )
 
+        self.export_button = QPushButton("Export Data")
+        self.export_button.setMinimumHeight(36)
+        self.export_button.setStyleSheet("""
+            font-size: 16px;
+            padding: 5px 12px;
+        """)
+        self.export_button.setToolTip(
+            "Save all data currently displayed in the selected "
+            "history window to a CSV file."
+        )
+        self.export_button.clicked.connect(
+            self.export_displayed_data
+        )
+
         controls_layout.addWidget(history_label)
         controls_layout.addWidget(self.window_selector)
+        controls_layout.addWidget(self.export_button)
         controls_layout.addStretch()
 
         main_layout.addLayout(controls_layout)
@@ -190,6 +209,142 @@ class PlotPanel(QWidget):
             self.update_from_history(
                 self.history
             )
+
+    # ---------------------------------------------------------
+    # Data export
+    # ---------------------------------------------------------
+
+    def export_displayed_data(self):
+        """
+        Export all records in the currently displayed time window.
+
+        The exported CSV uses the official History column names.
+        Sensor nicknames remain display-only.
+        """
+
+        visible_records = self.get_visible_records()
+
+        if not visible_records:
+            QMessageBox.warning(
+                self,
+                "No Data to Export",
+                "There is no data in the currently displayed range.",
+            )
+            return
+
+        first_timestamp = visible_records[0]["Timestamp"]
+        last_timestamp = visible_records[-1]["Timestamp"]
+
+        default_filename = (
+            "OpenLabDAQ_"
+            f"{first_timestamp:%Y%m%d_%H%M%S}_to_"
+            f"{last_timestamp:%Y%m%d_%H%M%S}.csv"
+        )
+
+        file_path, _selected_filter = QFileDialog.getSaveFileName(
+            self,
+            "Export Displayed Data",
+            default_filename,
+            "CSV files (*.csv)",
+        )
+
+        if not file_path:
+            return
+
+        if not file_path.lower().endswith(".csv"):
+            file_path += ".csv"
+
+        fieldnames = ["Timestamp"]
+
+        # Preserve the first-seen order of all measurement columns.
+        for record in visible_records:
+            for column in record:
+                if (
+                    column != "Timestamp"
+                    and column not in fieldnames
+                ):
+                    fieldnames.append(column)
+
+        try:
+            with open(
+                file_path,
+                "w",
+                newline="",
+                encoding="utf-8",
+            ) as csv_file:
+
+                writer = csv.DictWriter(
+                    csv_file,
+                    fieldnames=fieldnames,
+                )
+                writer.writeheader()
+
+                for record in visible_records:
+
+                    export_row = {
+                        column: record.get(column, "")
+                        for column in fieldnames
+                    }
+
+                    timestamp = export_row["Timestamp"]
+
+                    if hasattr(timestamp, "isoformat"):
+                        export_row["Timestamp"] = timestamp.isoformat(
+                            sep=" ",
+                            timespec="milliseconds",
+                        )
+
+                    writer.writerow(export_row)
+
+        except (OSError, PermissionError) as error:
+            QMessageBox.critical(
+                self,
+                "Export Error",
+                f"Could not save the CSV file:\n{error}",
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            "Export Complete",
+            (
+                f"Exported {len(visible_records)} records to:\n"
+                f"{file_path}"
+            ),
+        )
+
+    def get_visible_records(self):
+        """
+        Return the same History records represented by the plots.
+        """
+
+        if self.history is None:
+            return []
+
+        records = self.history.get_records()
+
+        if not records:
+            return []
+
+        latest_timestamp = records[-1]["Timestamp"]
+
+        cutoff_timestamp = (
+            latest_timestamp
+            - timedelta(
+                minutes=self.window_minutes
+            )
+        )
+
+        return [
+            record
+            for record in records
+            if (
+                "Timestamp" in record
+                and cutoff_timestamp
+                <= record["Timestamp"]
+                <= latest_timestamp
+            )
+        ]
 
     # ---------------------------------------------------------
     # History update
@@ -396,7 +551,7 @@ class PlotPanel(QWidget):
         curve = plot_widget.plot(
             pen=pg.mkPen(
                 color=(40, 110, 170),
-                width=2,
+                width=3,
             )
         )
 

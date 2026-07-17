@@ -37,10 +37,10 @@ import sys
 # Change ONLY these two lines.
 # ---------------------------------------------------------------------
 
-from sensors.FurnaceTC import FurnaceTC
+from sensors.HornetRGA import HornetRGA
 
-SENSOR = FurnaceTC
-PORT = "COM8"
+SENSOR = HornetRGA
+PORT = "COM11"
 
 # ---------------------------------------------------------------------
 # Standard DAQ communication test.

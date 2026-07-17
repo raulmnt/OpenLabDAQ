@@ -8,29 +8,29 @@
             "port": "COM8",
             "nickname": "Furnace Temperature"
         },
-        "Hornet": {
-            "enabled": false,
-            "port": "COM7",
+        "HornetRGA": {
+            "enabled": true,
+            "port": "COM11",
             "nickname": "RGA pressure"
         },
-         "BusyBee": {
-            "enabled": false,
-            "port": "COM7",
-            "nickname": "Furnace Pressure"
-        },
-        "FlowController": {
+        "BusyBee": {
             "enabled": false,
             "port": null,
+            "nickname": "Furnace Pressure"
+        },
+        "MassFlow": {
+            "enabled": true,
+            "port": "COM12",
             "nickname": "Gas Flow"
         },
         "OmegaTC_10": {
-            "enabled": true,
+            "enabled": false,
             "port": "COM10",
             "nickname": "Probe Temperature"
         }
     },
     "acquisition": {
-        "period_ms": 100
+        "period_ms": 1000
     },
     "logging": {
         "directory": "C:/Users/raulm/Desktop"

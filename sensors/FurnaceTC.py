@@ -122,7 +122,7 @@ class FurnaceTC:
             )
 
         try:
-            return float(response)
+            return int(round(float(response)))
 
         except ValueError as error:
             raise RuntimeError(
