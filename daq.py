@@ -15,6 +15,7 @@ Responsibilities
 
 from datetime import datetime
 from importlib import import_module
+from time import monotonic
 
 from config import load_config
 from history import History
@@ -47,6 +48,24 @@ class DAQ:
         self.logging = True
 
         self.first_record = True
+
+        # Runtime sensor failures are isolated after startup.
+        # Startup connection errors still abort DAQ startup in connect().
+        self.sensor_states = {
+            sensor: {
+                "failed": False,
+                "last_retry": 0.0,
+            }
+            for sensor in self.sensors
+        }
+
+        # Failed sensors are reconnected periodically rather than on every
+        # acquisition cycle.
+        self.reconnect_interval = 5.0
+
+        # Runtime events are collected here for the GUI to add to the
+        # existing human-readable logbook.
+        self.runtime_events = []
 
     # ---------------------------------------------------------
     # Sensor creation
@@ -175,7 +194,27 @@ class DAQ:
                 f"{sensor.NAME} ({sensor.UNIT})"
             )
 
-            record[column] = sensor.read()
+            state = self.sensor_states[sensor]
+
+            if state["failed"]:
+                record[column] = self._retry_failed_sensor(
+                    sensor,
+                    state,
+                )
+                continue
+
+            try:
+                record[column] = sensor.read()
+
+            except Exception as error:
+                record[column] = None
+                state["failed"] = True
+                state["last_retry"] = monotonic()
+
+                self._add_runtime_event(
+                    "Sensor communication failed",
+                    f"{sensor.NAME}: {error}",
+                )
 
         self.history.add(record)
 
@@ -190,3 +229,66 @@ class DAQ:
             self.logger.write(record)
 
         return record
+    # ---------------------------------------------------------
+    # Runtime sensor recovery
+    # ---------------------------------------------------------
+
+    def _retry_failed_sensor(self, sensor, state):
+        """
+        Periodically try to reconnect and read a failed sensor.
+
+        Returns
+        -------
+        float or None
+            A recovered reading, or None while the sensor remains unavailable.
+        """
+
+        now = monotonic()
+
+        if now - state["last_retry"] < self.reconnect_interval:
+            return None
+
+        state["last_retry"] = now
+
+        try:
+            try:
+                sensor.disconnect()
+            except Exception:
+                pass
+
+            sensor.connect()
+            value = sensor.read()
+
+        except Exception:
+            return None
+
+        state["failed"] = False
+
+        self._add_runtime_event(
+            "Sensor communication restored",
+            sensor.NAME,
+        )
+
+        return value
+
+    def _add_runtime_event(self, event, comment=""):
+        """
+        Store one DAQ event for the GUI to add to the active logbook.
+        """
+
+        self.runtime_events.append(
+            {
+                "event": str(event),
+                "comment": str(comment),
+            }
+        )
+
+    def pop_runtime_events(self):
+        """
+        Return and clear runtime sensor events.
+        """
+
+        events = self.runtime_events.copy()
+        self.runtime_events.clear()
+        return events
+

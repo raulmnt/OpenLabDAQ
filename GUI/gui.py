@@ -659,6 +659,10 @@ class MainWindow(QMainWindow):
         ):
             self.start_logbook_if_ready()
 
+        # Add automatic sensor failure and recovery events to the existing
+        # logbook. Events are discarded when CSV logging is not active.
+        self.record_daq_events()
+
         # Display components read only from History.
         self.sensor_panel.update_from_history(
             self.daq.history
@@ -753,6 +757,43 @@ class MainWindow(QMainWindow):
         self.reset_logging_controls(
             acquisition_running=False
         )
+
+    def record_daq_events(self):
+        """
+        Add queued DAQ sensor events to the active logbook.
+        """
+
+        if self.daq is None:
+            return
+
+        pop_events = getattr(
+            self.daq,
+            "pop_runtime_events",
+            None,
+        )
+
+        if pop_events is None:
+            return
+
+        events = pop_events()
+
+        if not self.logbook.is_active:
+            return
+
+        for event_information in events:
+            try:
+                self.logbook.add_event(
+                    event_information["event"],
+                    event_information.get("comment", ""),
+                )
+
+            except (OSError, RuntimeError, ValueError) as error:
+                QMessageBox.warning(
+                    self,
+                    "Automatic Event Error",
+                    str(error),
+                )
+                break
 
     # ---------------------------------------------------------
     # Logging and logbook control
